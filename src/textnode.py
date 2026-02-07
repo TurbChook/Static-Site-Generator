@@ -19,6 +19,8 @@ class TextNode:
                      and self.url == other.url)
     def __repr__(self):
         return f"TextNode({self.text}, {self.text_type.value}, {self.url})"
+    
+
 def text_node_to_html_node(text_node):
     #We want to convert a TextNode into a LeafNode
     match text_node.text_type:
@@ -36,30 +38,37 @@ def text_node_to_html_node(text_node):
             return LeafNode('img','',{'src':text_node.url,'alt':text_node.text})
         case _:
             raise ValueError('Invalid TextType')
+        
+
 def split_nodes_delimiter(old_nodes, delimiter, text_type):
-    result = []
-    for node in old_nodes:
-        if node.text_type != TextType.TEXT:
-            result.append(node)
+    new_nodes = []
+    for old_node in old_nodes:
+        if old_node.text_type != TextType.TEXT:
+            new_nodes.append(old_node)
             continue
         split_nodes = []
-        sections = node.text.split(delimiter)
-        if len(sections)%2 == 0:
+        sections = old_node.text.split(delimiter)
+        if len(sections) % 2 == 0:
             raise ValueError("invalid markdown, formatted section not closed")
-        
         for i in range(len(sections)):
-            if sections[i] == '':
+            if sections[i] == "":
                 continue
-            if i%2 == 0:
-                split_nodes.append(TextNode(sections[i],TextType.TEXT))
+            if i % 2 == 0:
+                split_nodes.append(TextNode(sections[i], TextType.TEXT))
             else:
-                split_nodes.append(TextNode(sections[i],text_type))
-        result.extend(split_nodes)
-    return result
+                split_nodes.append(TextNode(sections[i], text_type))
+        new_nodes.extend(split_nodes)
+    return new_nodes
+
+
 def extract_markdown_images(text):
     return re.findall(r"!\[([^\[\]]*)\]\(([^\(\)]*)\)",text)
+
+
 def extract_markdown_links(text):
     return re.findall(r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)",text)
+
+
 def split_nodes_image(old_nodes):
     new_nodes = []
     for old_node in old_nodes:
@@ -112,6 +121,14 @@ def split_nodes_link(old_nodes):
         if original_text != "":
             new_nodes.append(TextNode(original_text, TextType.TEXT))
     return new_nodes
+
+
+def text_to_textnodes(text):
+    nodes = split_nodes_link(split_nodes_image([TextNode(text,TextType.TEXT)]))
+    nodes = split_nodes_delimiter(nodes,"**",TextType.BOLD)
+    nodes = split_nodes_delimiter(nodes,"_",TextType.ITALIC)
+    nodes = split_nodes_delimiter(nodes,"`",TextType.CODE)
+    return nodes
 '''
 def split_nodes_image(old_nodes):
     result = []
